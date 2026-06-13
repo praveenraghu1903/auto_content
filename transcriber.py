@@ -55,14 +55,22 @@ def transcribe_video(video_path: str) -> list[dict] | None:
             timestamp_granularities=["segment"],
         )
 
-    segments = [
-        {
-            "start": round(seg.start, 2),
-            "end": round(seg.end, 2),
-            "text": seg.text.strip(),
-        }
-        for seg in response.segments
-    ]
+    segments = []
+    for seg in response.segments:
+        # Groq SDK may return segments as objects or dicts depending on version
+        if isinstance(seg, dict):
+            start = seg.get('start', 0)
+            end   = seg.get('end', 0)
+            text  = seg.get('text', '').strip()
+        else:
+            start = seg.start
+            end   = seg.end
+            text  = seg.text.strip()
+        segments.append({
+            "start": round(start, 2),
+            "end":   round(end, 2),
+            "text":  text,
+        })
 
     total_duration = segments[-1]["end"] if segments else 0
     print(f"Transcribed {len(segments)} segments, {total_duration:.0f}s total.")
