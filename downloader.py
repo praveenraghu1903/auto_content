@@ -26,12 +26,14 @@ def download_video(url: str) -> str | None:
 
     cmd = [
         "yt-dlp",
-        "--format", "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best",
+        "--format", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
         "--merge-output-format", "mp4",
         "--output", output_template,
         "--no-playlist",
         "--quiet",
         "--progress",
+        "--no-check-certificates",
+        "--extractor-retries", "3",
         url,
     ]
 

@@ -53,21 +53,39 @@ DAILY_SEEN_FILE = "daily_seen.json"
 
 def resolve_channel_id(channel_url: str) -> str | None:
     """
-    Resolve a YouTube channel URL (handle or /channel/) to its channel ID.
-    Uses yt-dlp which handles all URL formats reliably.
+    Resolve a YouTube channel URL to its channel ID.
+    Uses direct HTTP request to YouTube page — much faster than yt-dlp.
+    Falls back to yt-dlp only if HTTP method fails.
     """
+    # Direct channel ID in URL — no resolution needed
     if "/channel/UC" in channel_url:
         return channel_url.split("/channel/")[1].split("/")[0]
 
     try:
+        import re
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        resp = requests.get(channel_url, headers=headers, timeout=15)
+        # YouTube embeds the channel ID in the page HTML
+        match = re.search(r'"channelId":"(UC[^"]+)"', resp.text)
+        if match:
+            return match.group(1)
+        # Try alternate pattern
+        match = re.search(r'channel/(UC[^/"]+)', resp.text)
+        if match:
+            return match.group(1)
+    except Exception as e:
+        print(f"  HTTP resolve failed for {channel_url}: {e}")
+
+    # Last resort — yt-dlp with shorter timeout
+    try:
         result = subprocess.run(
             ["yt-dlp", "--playlist-items", "1", "--print", "channel_id", channel_url],
-            capture_output=True, text=True, timeout=30
+            capture_output=True, text=True, timeout=20
         )
         channel_id = result.stdout.strip().splitlines()[0] if result.stdout.strip() else None
         return channel_id if channel_id else None
     except Exception as e:
-        print(f"  Could not resolve channel ID for {channel_url}: {e}")
+        print(f"  yt-dlp resolve also failed for {channel_url}: {e}")
         return None
 
 
