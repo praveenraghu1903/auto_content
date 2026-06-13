@@ -1,0 +1,17 @@
+# Runtime data files — auto-created, don't commit
+seen_videos.json
+daily_seen.json
+channel_id_cache.json
+
+# Temp workspace
+/tmp/shorts_workspace/
+
+# Logs
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
