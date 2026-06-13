@@ -45,7 +45,7 @@ def build_subtitle_file(segments: list[dict], start: float, end: float, clip_uid
         lines.append(seg["text"])
         lines.append("")
 
-    with open(srt_path, "w") as f:
+    with open(srt_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
     return srt_path

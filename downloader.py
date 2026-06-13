@@ -34,7 +34,7 @@ def download_video(url: str) -> str | None:
         "--progress",
         "--no-check-certificates",
         "--extractor-retries", "3",
-        "--js-runtimes", "nodejs,deno,phomjs",
+        "--js-runtimes", "node,deno,bun",
         url,
     ]
 

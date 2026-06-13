@@ -20,30 +20,35 @@ turn into viral Shorts (under 60 seconds).
 
 You will receive:
 - The video title
-- A timestamped transcript as JSON segments
+- A timestamped transcript as lines like [M:SS-M:SS] text
 
-Your job is to select 2-3 clip windows that would make excellent Shorts. 
-Each clip must be 30–59 seconds long.
+Your job is to select 2-3 clip windows that would make excellent Shorts.
+
+STRICT RULES — violating these will break the pipeline:
+1. Each clip MUST be between 30 and 59 seconds long (end - start >= 30 AND end - start <= 59)
+2. start and end MUST be real timestamps that exist in the transcript
+3. start MUST be less than end
+4. Do NOT invent timestamps — only use times that appear in the transcript
+5. If the video is too short or has no good moments, return an empty array []
 
 Criteria for a great Short moment:
-1. STRONG HOOK — starts with something immediately interesting (a surprising fact, 
-   a bold claim, a question, a demonstration, or an emotional moment)
-2. SELF-CONTAINED — makes complete sense without watching the full video
-3. HIGH VALUE — teaches something, entertains, or creates emotion
-4. CLEAN ENDING — ends at a natural pause, not mid-sentence
+- STRONG HOOK — starts with something immediately interesting
+- SELF-CONTAINED — makes complete sense without watching the full video
+- HIGH VALUE — teaches something, entertains, or creates emotion
 
-You must respond ONLY with a valid JSON array. No explanation. No markdown. 
-Example format:
+You must respond ONLY with a valid JSON array. No explanation. No markdown.
+Example:
 [
   {
     "start": 142.5,
-    "end": 198.0,
+    "end": 181.0,
     "title": "The surprising truth about X",
-    "description": "Did you know that... [engaging 2-sentence description for the Short]",
-    "hashtags": ["#topic1", "#topic2", "#shorts", "#viral"],
-    "hook": "Why this clip works as a hook (internal note)"
+    "description": "Short engaging description for YouTube.",
+    "hashtags": ["#topic1", "#shorts", "#viral"]
   }
-]"""
+]
+
+If no moment meets the 30-59 second rule, return: []"""
 
 
 def segments_to_text(segments: list[dict]) -> str:
@@ -87,12 +92,23 @@ Remember: each clip must be 30-59 seconds. Return only JSON."""
         raw = response.choices[0].message.content.strip()
 
         # Strip markdown code fences if present
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        raw = raw.strip()
+        if "```" in raw:
+            parts = raw.split("```")
+            for part in parts:
+                if part.startswith("json"):
+                    raw = part[4:].strip()
+                    break
+                elif "[" in part:
+                    raw = part.strip()
+                    break
 
+        # Extract JSON array even if surrounded by text
+        start_idx = raw.find("[")
+        end_idx   = raw.rfind("]")
+        if start_idx != -1 and end_idx != -1:
+            raw = raw[start_idx:end_idx + 1]
+
+        raw = raw.strip()
         moments = json.loads(raw)
 
         # Validate and filter
